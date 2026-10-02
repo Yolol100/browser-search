@@ -1,29 +1,25 @@
 # Agent instructions
 
-Keep this repository focused on one purpose: provide a local Google browser-search tool to agents through MCP.
+Purpose: let an authorized agent request one bounded Google browser search through GitHub.
 
-Required architecture:
+Canonical flow:
 
-`Playwright/Chromium -> SearchService -> browser_search MCP tool`
+`GitHub issue -> browser-search workflow -> Playwright/Chromium -> issue result comment`
 
-Keep the CLI only as a local diagnostic path.
+A valid request:
+- is created by the repository owner;
+- has a title starting with `[browser-search]`;
+- contains either a plain query or the documented JSON request body.
 
-Do not re-add HTTP APIs, OpenAPI schemas, Docker deployment or parallel integration layers unless a concrete requirement appears that cannot be met by MCP + Secure MCP Tunnel.
+Do not re-add MCP, HTTP APIs, Docker deployment or parallel invocation layers unless a concrete requirement proves this GitHub-native route insufficient.
 
-Preserve these boundaries:
-
-- no CAPTCHA/bot-block bypass;
+Preserve:
+- no CAPTCHA/block bypass;
 - no stealth/fingerprint spoofing;
 - no proxy rotation for bypass;
 - bounded serialized search and post-block backoff;
-- destination pages are not crawled here;
-- provider provenance remains on every result;
-- selector/parser changes require a deterministic regression test where possible.
+- no crawling of result destinations;
+- provider provenance on results;
+- safe parsing from `GITHUB_EVENT_PATH` rather than interpolating issue text into shell commands.
 
-Before release claims run:
-
-```bash
-npm run verify
-npm run browser-smoke
-npm run mcp-smoke
-```
+Before release claims run CI and confirm the browser-search request workflow still exists on the default branch.
