@@ -20,7 +20,8 @@ jobs:
         with:
           node-version: '22'
           package-manager-cache: false
-      - run: npm install --ignore-scripts
+      - run: npm ci --ignore-scripts
+      - run: npm audit --omit=dev --audit-level=high
       - run: npx playwright install --with-deps chromium
       - run: npm run verify
       - run: npm run browser-smoke
