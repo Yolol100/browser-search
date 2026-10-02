@@ -1,25 +1,21 @@
 {
   "name": "browser-search",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
-  "description": "Minimal Playwright Google browser-search tool for MCP agents.",
+  "description": "GitHub-triggered Playwright Google browser search for ChatGPT workflows.",
   "type": "module",
   "engines": {
     "node": ">=22 <27"
   },
   "scripts": {
     "search": "node src/cli.mjs",
-    "mcp": "node src/mcp-server.mjs",
     "test": "node --test",
     "test:syntax": "find src scripts test -name '*.mjs' -print0 | xargs -0 -n1 node --check",
     "self-check": "node scripts/self-check.mjs",
     "browser-smoke": "node scripts/browser-smoke.mjs",
-    "mcp-smoke": "node scripts/mcp-smoke.mjs",
     "verify": "npm run test:syntax && npm test && npm run self-check"
   },
   "dependencies": {
-    "@modelcontextprotocol/server": "2.2.0",
-    "playwright": "1.63.0",
-    "zod": "4.6.5"
+    "playwright": "1.63.0"
   }
 }
