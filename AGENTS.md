@@ -1,9 +1,29 @@
-# Agent Instructions
+# Agent instructions
 
-- Preserve the fail-closed behavior around Google consent, CAPTCHA, automated-traffic blocks, and unexpected navigation.
-- Never add stealth plugins, proxy rotation, CAPTCHA solving, fingerprint spoofing, or automated block bypass.
-- Keep Google requests serialized and bounded.
-- Do not add result-page crawling without a separate SSRF/redirect/DNS-rebinding threat model and explicit acceptance tests.
-- Keep provider provenance on every result.
-- Any selector/parser change needs a regression fixture or a documented manual-runtime limitation.
-- Run `npm test` and `npm run self-check` before release claims.
+Keep this repository focused on one purpose: provide a local Google browser-search tool to agents through MCP.
+
+Required architecture:
+
+`Playwright/Chromium -> SearchService -> browser_search MCP tool`
+
+Keep the CLI only as a local diagnostic path.
+
+Do not re-add HTTP APIs, OpenAPI schemas, Docker deployment or parallel integration layers unless a concrete requirement appears that cannot be met by MCP + Secure MCP Tunnel.
+
+Preserve these boundaries:
+
+- no CAPTCHA/bot-block bypass;
+- no stealth/fingerprint spoofing;
+- no proxy rotation for bypass;
+- bounded serialized search and post-block backoff;
+- destination pages are not crawled here;
+- provider provenance remains on every result;
+- selector/parser changes require a deterministic regression test where possible.
+
+Before release claims run:
+
+```bash
+npm run verify
+npm run browser-smoke
+npm run mcp-smoke
+```
