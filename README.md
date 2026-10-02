@@ -1,42 +1,38 @@
 # browser-search
 
-A small Google browser-search runner that ChatGPT can call through GitHub.
+A small Google browser-search runner that ChatGPT can invoke through GitHub, without MCP.
 
-The intended flow is:
+Canonical flow:
 
-`ChatGPT -> GitHub issue -> GitHub Actions -> Playwright/Chromium -> Google -> issue comment -> ChatGPT`
+`ChatGPT -> GitHub issue -> self-hosted GitHub Actions runner -> Playwright/Chromium -> Google -> issue comment -> ChatGPT`
 
-No MCP server is required.
+## Why a self-hosted runner
 
-## How ChatGPT calls it
+A GitHub repository stores code; GitHub Actions executes it. A real test using a GitHub-hosted runner successfully triggered this repository from ChatGPT, but Google blocked the cloud-runner IP as automated traffic.
 
-Create an issue in this repository with a title starting with:
+The search workflow therefore targets a self-hosted runner labeled `browser-search`. This executes Chromium from your own machine/network while ChatGPT still uses GitHub as the request/response channel.
 
-`[browser-search]`
+## ChatGPT request
 
-The issue body is either a plain search query:
+Create an issue whose title starts with `[browser-search]`.
 
-```text
-site:nu.nl technologie
-```
-
-or JSON:
+Body can be a plain query or:
 
 ```json
 {"query":"site:nu.nl technologie","limit":5,"language":"nl","country":"nl"}
 ```
 
-Only issues created by the repository owner are executed. The workflow runs the browser search, writes the result back as a comment and closes the request issue.
+Only owner-created request issues execute. The runner posts the result as an issue comment and closes the issue.
 
-A ChatGPT environment with GitHub issue-write access can therefore use this repository as a search execution bridge: create the request issue, wait for the Action, read the result comment, then verify useful destination sources.
+## One-time runner setup
 
-## Why GitHub Actions
+In this repository open `Settings -> Actions -> Runners -> New self-hosted runner`.
 
-A GitHub repository stores code but does not execute it by itself. GitHub Actions is the runtime. Using an issue as the request envelope means no separate MCP tunnel, hosted API or server is required.
+Install the GitHub runner on the machine that should execute searches and add the custom label `browser-search`.
 
-## Install/test locally
+See `docs/chatgpt.md`.
 
-Requirements: Node.js 22+.
+## Local verification
 
 ```bash
 npm ci
@@ -45,33 +41,30 @@ npm run verify
 npm run browser-smoke
 ```
 
-Manual local search:
+Manual query:
 
 ```bash
 GOOGLE_CONSENT_MODE=reject npm run search -- "site:nu.nl technologie" 5 nl nl
 ```
 
-## Safety boundaries
+## Boundaries
 
 - no CAPTCHA solving or bypass;
-- no stealth/fingerprint spoofing;
 - no proxy rotation for bypass;
-- serialized searches and cooldown;
-- fail-closed backoff after Google automated-traffic/CAPTCHA signals;
-- result destinations are not crawled by this process;
-- titles/snippets are discovery metadata and should be verified at the destination.
+- no stealth/fingerprint spoofing;
+- Google blocks fail closed;
+- search requests are serialized at workflow level;
+- destination pages are not crawled by this process;
+- returned snippets are discovery data and must be verified at destination sources.
 
-## Privacy warning
+## Privacy
 
-This repository is currently public. GitHub issues and their result comments are therefore public. Use this request route only for non-sensitive searches unless the repository is made private.
+The repository is currently public, so request issues and result comments are public. Make the repository private before using confidential or personal search queries.
 
-## CI
+## Official references checked 2026-10-02
 
-Normal CI verifies source syntax, deterministic tests, dependency audit and a real Chromium launch. The search-request workflow is separate and runs only for owner-created issues whose title starts with `[browser-search]`.
-
-## Current official references checked 2026-10-02
-
-- GitHub Actions issue triggers: https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows
-- GitHub CLI comments in Actions: https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-github-cli
+- GitHub self-hosted runners: https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/add-runners
+- GitHub runner labels: https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/use-in-a-workflow
+- GitHub issue-triggered Actions: https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows
 - Playwright browsers: https://playwright.dev/docs/browsers
 - Google automated traffic guidance: https://support.google.com/websearch/answer/86640
