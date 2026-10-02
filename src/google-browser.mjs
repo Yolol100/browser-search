@@ -63,14 +63,19 @@ export class GoogleBrowserSearch {
     this.blockedUntil = 0;
   }
 
-  async search({ query, limit, language, country }) {
+  assertNotBackedOff() {
     if (Date.now() < this.blockedUntil) {
       throw new SearchError('GOOGLE_BACKOFF', 'Google browser search is in backoff after an automated-traffic block.', 429, {
         retryAfterMs: this.blockedUntil - Date.now()
       });
     }
+  }
+
+  async search({ query, limit, language, country }) {
+    this.assertNotBackedOff();
 
     return this.gate.run(async () => {
+      this.assertNotBackedOff();
       const startedAt = Date.now();
       let playwright;
       try {
@@ -87,9 +92,10 @@ export class GoogleBrowserSearch {
       }
 
       const locale = language.includes('-') ? language : `${language}-${country.toUpperCase()}`;
-      const context = await browser.newContext({ locale });
-      const page = await context.newPage();
+      let context;
       try {
+        context = await browser.newContext({ locale });
+        const page = await context.newPage();
         await page.route('**/*', async route => {
           const type = route.request().resourceType();
           if (['image', 'media', 'font'].includes(type)) return route.abort();
@@ -97,7 +103,13 @@ export class GoogleBrowserSearch {
         });
 
         const url = buildGoogleSearchUrl({ query, limit, language, country });
-        await page.goto(url.toString(), { waitUntil: 'domcontentloaded', timeout: this.config.navigationTimeoutMs });
+        try {
+          await page.goto(url.toString(), { waitUntil: 'domcontentloaded', timeout: this.config.navigationTimeoutMs });
+        } catch (error) {
+          throw new SearchError('GOOGLE_NAVIGATION_FAILED', 'Google Search could not be loaded within the configured navigation boundary.', 502, {
+            reason: String(error?.message || error).slice(0, 300)
+          });
+        }
         await handleConsent(page, this.config.consentMode, this.config.navigationTimeoutMs);
 
         const currentUrl = page.url();
@@ -134,7 +146,7 @@ export class GoogleBrowserSearch {
           }
         };
       } finally {
-        await context.close().catch(() => undefined);
+        if (context) await context.close().catch(() => undefined);
         await browser.close().catch(() => undefined);
       }
     });
