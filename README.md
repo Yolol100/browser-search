@@ -1,94 +1,77 @@
 # browser-search
 
-A small local Google browser-search tool for ChatGPT/Codex workflows.
+A small Google browser-search runner that ChatGPT can call through GitHub.
 
-It uses Playwright + Chromium to perform one bounded Google Search and exposes the result through a single MCP tool:
+The intended flow is:
 
-`browser_search`
+`ChatGPT -> GitHub issue -> GitHub Actions -> Playwright/Chromium -> Google -> issue comment -> ChatGPT`
 
-The intended setup is:
+No MCP server is required.
 
-`ChatGPT native Search + browser_search -> verify useful sources -> answer`
+## How ChatGPT calls it
 
-## What this repository does
+Create an issue in this repository with a title starting with:
 
-- opens Google Search in Chromium;
-- returns normalized organic-result metadata;
-- keeps Google as a separate source from ChatGPT's own web search;
-- serializes requests and applies a cooldown;
-- backs off after automated-traffic/CAPTCHA signals;
-- stops on unresolved consent instead of bypassing it;
-- exposes one read-only MCP tool plus a small CLI for testing.
+`[browser-search]`
 
-It is **not** an official Google Search API and cannot guarantee unlimited access. Google may block automated traffic.
+The issue body is either a plain search query:
 
-## Install
+```text
+site:nu.nl technologie
+```
+
+or JSON:
+
+```json
+{"query":"site:nu.nl technologie","limit":5,"language":"nl","country":"nl"}
+```
+
+Only issues created by the repository owner are executed. The workflow runs the browser search, writes the result back as a comment and closes the request issue.
+
+A ChatGPT environment with GitHub issue-write access can therefore use this repository as a search execution bridge: create the request issue, wait for the Action, read the result comment, then verify useful destination sources.
+
+## Why GitHub Actions
+
+A GitHub repository stores code but does not execute it by itself. GitHub Actions is the runtime. Using an issue as the request envelope means no separate MCP tunnel, hosted API or server is required.
+
+## Install/test locally
 
 Requirements: Node.js 22+.
 
 ```bash
 npm ci
 npx playwright install chromium
-```
-
-Optional runtime settings are listed in `.env.example`. Load them through your shell/process environment; this project does not parse `.env` automatically.
-
-## Test it locally
-
-```bash
-GOOGLE_CONSENT_MODE=reject npm run search -- "WordPress performance 2026" 5 nl nl
-```
-
-Arguments:
-
-`query [limit] [language] [country]`
-
-## Run as MCP
-
-```bash
-npm run mcp
-```
-
-The MCP server exposes exactly one tool: `browser_search`.
-
-For ChatGPT, a local MCP server cannot be connected directly. Keep this process local and connect it through OpenAI Secure MCP Tunnel. See `docs/chatgpt.md`.
-
-## Verify
-
-```bash
 npm run verify
 npm run browser-smoke
-npm run mcp-smoke
 ```
 
-CI runs the same deterministic checks, installs the matching Chromium build, runs `npm audit`, launches Chromium and verifies the MCP process starts.
+Manual local search:
 
-A live Google query is deliberately not a CI test because Google can classify automated queries as automated traffic. A CAPTCHA or unusual-traffic page is a valid fail-closed outcome, not something this project tries to bypass.
+```bash
+GOOGLE_CONSENT_MODE=reject npm run search -- "site:nu.nl technologie" 5 nl nl
+```
 
-## Important boundaries
+## Safety boundaries
 
-- no CAPTCHA solving;
-- no proxy rotation for bypass;
+- no CAPTCHA solving or bypass;
 - no stealth/fingerprint spoofing;
-- no automated Google-block evasion;
-- no crawling of result destinations inside this process;
-- treat returned titles/snippets as discovery data and verify destination sources before relying on them.
+- no proxy rotation for bypass;
+- serialized searches and cooldown;
+- fail-closed backoff after Google automated-traffic/CAPTCHA signals;
+- result destinations are not crawled by this process;
+- titles/snippets are discovery metadata and should be verified at the destination.
 
-## Current integration
+## Privacy warning
 
-The minimal required path is intentionally only:
+This repository is currently public. GitHub issues and their result comments are therefore public. Use this request route only for non-sensitive searches unless the repository is made private.
 
-1. Playwright/Chromium search engine;
-2. MCP stdio server;
-3. Secure MCP Tunnel for ChatGPT;
-4. CLI + tests for local verification.
+## CI
 
-No HTTP API, Docker deployment layer or duplicate API schema is maintained because those are not required for this use case.
+Normal CI verifies source syntax, deterministic tests, dependency audit and a real Chromium launch. The search-request workflow is separate and runs only for owner-created issues whose title starts with `[browser-search]`.
 
-## Official references checked 2026-10-02
+## Current official references checked 2026-10-02
 
-- OpenAI Secure MCP Tunnel: https://developers.openai.com/api/docs/guides/secure-mcp-tunnels
-- ChatGPT developer mode and MCP apps: https://help.openai.com/en/articles/12584461-developer-mode-and-mcp-apps-in-chatgpt
-- Playwright browser installation: https://playwright.dev/docs/browsers
-- Google automated-traffic guidance: https://support.google.com/websearch/answer/86640
-- Google Terms: https://policies.google.com/terms
+- GitHub Actions issue triggers: https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows
+- GitHub CLI comments in Actions: https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-github-cli
+- Playwright browsers: https://playwright.dev/docs/browsers
+- Google automated traffic guidance: https://support.google.com/websearch/answer/86640
