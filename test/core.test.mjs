@@ -51,6 +51,8 @@ test('unwraps Google redirect results but not ad redirectors', () => {
     unwrapGoogleResultUrl('https://www.google.com/aclk?foo=bar'),
     'https://www.google.com/aclk?foo=bar'
   );
+  assert.equal(normalizeResultUrl('https://www.google.com/aclk?foo=bar'), null);
+  assert.equal(normalizeResultUrl('https://www.google.com/pagead/aclk?foo=bar'), null);
 });
 
 test('normalizes tracking params, parameter order and exact duplicates', () => {
