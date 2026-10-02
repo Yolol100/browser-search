@@ -8,12 +8,16 @@ permissions:
   contents: read
   issues: write
 
+concurrency:
+  group: browser-search
+  cancel-in-progress: false
+
 jobs:
   search:
     if: >-
       github.event.issue.user.login == github.repository_owner &&
       startsWith(github.event.issue.title, '[browser-search]')
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, browser-search]
     timeout-minutes: 10
     env:
       GOOGLE_CONSENT_MODE: reject
@@ -30,23 +34,8 @@ jobs:
           node-version: '22'
           package-manager-cache: false
       - run: npm ci --ignore-scripts
-      - run: npx playwright install --with-deps chromium
-      - name: Run browser search
-        id: search
-        continue-on-error: true
+      - run: npx playwright install chromium
+      - name: Run search and return result
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/github-search-request.mjs
-      - name: Return result to issue
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ISSUE_URL: ${{ github.event.issue.html_url }}
-        run: gh issue comment "$ISSUE_URL" --body-file browser-search-result.md
-      - name: Close request
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ISSUE_URL: ${{ github.event.issue.html_url }}
-        run: gh issue close "$ISSUE_URL" --reason completed
-      - name: Preserve provider failure in workflow status
-        if: steps.search.outcome == 'failure'
-        run: exit 1
