@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BrowserSearchResponse",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["provider", "query", "count", "results", "meta"],
+  "properties": {
+    "provider": {"const": "google-browser"},
+    "query": {"type": "string"},
+    "count": {"type": "integer", "minimum": 0},
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["title", "url", "snippet", "domain", "source"],
+        "properties": {
+          "title": {"type": "string", "maxLength": 300},
+          "url": {"type": "string", "format": "uri"},
+          "snippet": {"type": "string", "maxLength": 600},
+          "domain": {"type": "string"},
+          "source": {"const": "google-browser"}
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["country", "language", "durationMs", "headless", "consentMode"],
+      "properties": {
+        "country": {"type": "string"},
+        "language": {"type": "string"},
+        "durationMs": {"type": "integer", "minimum": 0},
+        "headless": {"type": "boolean"},
+        "consentMode": {"enum": ["manual", "accept", "reject"]}
+      }
+    }
+  }
+}
