@@ -1,54 +1,43 @@
-# ChatGPT integration
+# ChatGPT usage without MCP
 
-The repository only needs one ChatGPT integration path: the local stdio MCP server through OpenAI Secure MCP Tunnel.
+The repository can be used through GitHub itself when the ChatGPT environment has permission to create and read GitHub issues.
 
-ChatGPT does not connect directly to a local MCP process. Secure MCP Tunnel lets the local server remain private while supported OpenAI products call it over an outbound tunnel.
+## Request
 
-## 1. Prepare browser-search
+Create an issue in `Yolol100/browser-search`.
 
-```bash
-npm ci
-npx playwright install chromium
-npm run verify
-npm run browser-smoke
-npm run mcp-smoke
+Title:
+
+`[browser-search] <short description>`
+
+Body, either:
+
+```text
+site:nu.nl technologie
 ```
 
-## 2. Run the MCP server locally
+or:
 
-```bash
-npm run mcp
+```json
+{"query":"site:nu.nl technologie","limit":5,"language":"nl","country":"nl"}
 ```
 
-It exposes one read-only tool:
+## Execution
 
-`browser_search(query, limit?, language?, country?)`
+GitHub Actions reacts to an owner-created issue with that title prefix, checks out the repository, installs the pinned dependencies and Chromium, and runs `scripts/github-search-request.mjs`.
 
-## 3. Connect it to OpenAI
+The search result or fail-closed provider error is posted as an issue comment. The request issue is then closed.
 
-Create a Secure MCP Tunnel in OpenAI Platform and configure `tunnel-client` to launch this repository's stdio server.
+## ChatGPT readback
 
-Conceptually the command is:
+After creating the issue, retrieve its comments. Look for:
 
-```bash
-node /absolute/path/browser-search/src/mcp-server.mjs
-```
+`<!-- browser-search-result:v1 -->`
 
-Use the exact current `tunnel-client` setup instructions from OpenAI's Secure MCP Tunnel documentation when configuring the machine.
+Parse the JSON result and use the returned URLs as discovery candidates. Verify useful destination pages separately before making factual claims.
 
-## Intended use in ChatGPT
+## Important limitation
 
-Use ChatGPT's normal/native Search as the main web-search source. Call `browser_search` when an additional Google result view is useful.
+OpenAI's standard GitHub app is documented primarily as repository content access and may be read-only depending on the product surface. This workflow requires a ChatGPT/Codex/connector surface that can create an issue. In the current connected GitHub toolset, issue creation and comment readback are available.
 
-Then:
-
-1. keep `source=google-browser` provenance;
-2. deduplicate overlapping URLs;
-3. open and verify useful destination sources separately;
-4. do not treat Google snippets as final evidence;
-5. if Google returns consent/blocking/layout failure, continue with other available sources rather than bypassing Google controls.
-
-Official docs:
-
-- https://developers.openai.com/api/docs/guides/secure-mcp-tunnels
-- https://help.openai.com/en/articles/12584461-developer-mode-and-mcp-apps-in-chatgpt
+The repository itself is currently public, so request issues are public. Do not use it for sensitive search queries unless the repository visibility is changed to private.
