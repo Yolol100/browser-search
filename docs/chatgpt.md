@@ -1,53 +1,54 @@
-# ChatGPT / OpenAI integration
+# ChatGPT integration
 
-## Preferred private route: Secure MCP Tunnel
+The repository only needs one ChatGPT integration path: the local stdio MCP server through OpenAI Secure MCP Tunnel.
 
-ChatGPT does not connect directly to a local MCP process. Keep this repository private to the machine/network and expose the stdio MCP command through OpenAI Secure MCP Tunnel.
+ChatGPT does not connect directly to a local MCP process. Secure MCP Tunnel lets the local server remain private while supported OpenAI products call it over an outbound tunnel.
 
-1. Install and verify this project locally:
+## 1. Prepare browser-search
 
 ```bash
 npm ci
 npx playwright install chromium
 npm run verify
 npm run browser-smoke
+npm run mcp-smoke
 ```
 
-2. Create a Secure MCP Tunnel in OpenAI Platform tunnel settings and install the current `tunnel-client` release.
-
-3. Configure a named stdio profile. Replace paths and tunnel id with your own values:
-
-```bash
-export CONTROL_PLANE_API_KEY='...'
-
-tunnel-client init \
-  --sample sample_mcp_stdio_local \
-  --profile browser-search \
-  --tunnel-id tunnel_REPLACE_ME \
-  --mcp-command "node /absolute/path/browser-search/src/mcp-server.mjs"
-
-tunnel-client doctor --profile browser-search --explain
-tunnel-client run --profile browser-search
-```
-
-4. In ChatGPT developer mode / custom apps, connect the OpenAI-hosted tunnel endpoint and verify that exactly one tool is exposed: `browser_search`.
-
-Keep `tunnel-client run` healthy while using the app. The tunnel uses outbound HTTPS and does not require a public inbound port to this service.
-
-## Local MCP hosts
-
-For a local MCP-capable tool such as a development client, invoke:
+## 2. Run the MCP server locally
 
 ```bash
 npm run mcp
 ```
 
-The MCP protocol uses stdout. Normal diagnostics go to stderr.
+It exposes one read-only tool:
 
-## HTTP/OpenAPI route
+`browser_search(query, limit?, language?, country?)`
 
-The HTTP API can be used by a private service or legacy/action-style integration. For a hosted integration, terminate TLS and authentication outside this process. Prefer MCP + Secure MCP Tunnel for ChatGPT rather than opening this local service to the public internet.
+## 3. Connect it to OpenAI
 
-## Product boundary
+Create a Secure MCP Tunnel in OpenAI Platform and configure `tunnel-client` to launch this repository's stdio server.
 
-Full custom MCP capabilities in ChatGPT depend on plan/workspace and developer-mode availability. Treat OpenAI product availability as a live platform fact and recheck official documentation when deploying.
+Conceptually the command is:
+
+```bash
+node /absolute/path/browser-search/src/mcp-server.mjs
+```
+
+Use the exact current `tunnel-client` setup instructions from OpenAI's Secure MCP Tunnel documentation when configuring the machine.
+
+## Intended use in ChatGPT
+
+Use ChatGPT's normal/native Search as the main web-search source. Call `browser_search` when an additional Google result view is useful.
+
+Then:
+
+1. keep `source=google-browser` provenance;
+2. deduplicate overlapping URLs;
+3. open and verify useful destination sources separately;
+4. do not treat Google snippets as final evidence;
+5. if Google returns consent/blocking/layout failure, continue with other available sources rather than bypassing Google controls.
+
+Official docs:
+
+- https://developers.openai.com/api/docs/guides/secure-mcp-tunnels
+- https://help.openai.com/en/articles/12584461-developer-mode-and-mcp-apps-in-chatgpt
