@@ -11,15 +11,15 @@ const required = [
   'src/errors.mjs',
   'src/gate.mjs',
   'src/google-browser.mjs',
-  'src/mcp-server.mjs',
   'src/results.mjs',
   'src/service.mjs',
   'src/validation.mjs',
   'scripts/browser-smoke.mjs',
-  'scripts/mcp-smoke.mjs',
+  'scripts/github-search-request.mjs',
   'test/core.test.mjs',
   'docs/chatgpt.md',
-  '.github/workflows/ci.yml'
+  '.github/workflows/ci.yml',
+  '.github/workflows/browser-search.yml'
 ];
 
 const missing = required.filter(file => !fs.existsSync(file));
@@ -32,6 +32,8 @@ const forbidden = [
   '.env',
   'storageState.json',
   'cookies.json',
+  'src/mcp-server.mjs',
+  'scripts/mcp-smoke.mjs',
   'Dockerfile',
   'docker-compose.yml',
   'openapi.yaml',
@@ -40,7 +42,7 @@ const forbidden = [
 ];
 const presentForbidden = forbidden.filter(file => fs.existsSync(file));
 if (presentForbidden.length) {
-  console.error(`Unexpected files for the MCP-only architecture: ${presentForbidden.join(', ')}`);
+  console.error(`Unexpected files for the GitHub-native architecture: ${presentForbidden.join(', ')}`);
   process.exit(1);
 }
 
