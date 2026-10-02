@@ -2,22 +2,20 @@
   "name": "browser-search",
   "version": "0.2.0",
   "private": true,
-  "description": "Bounded Playwright Google browser-search bridge for agent workflows.",
+  "description": "Minimal Playwright Google browser-search tool for MCP agents.",
   "type": "module",
   "engines": {
     "node": ">=22 <27"
   },
   "scripts": {
-    "start": "node src/server.mjs",
     "search": "node src/cli.mjs",
+    "mcp": "node src/mcp-server.mjs",
     "test": "node --test",
     "test:syntax": "find src scripts test -name '*.mjs' -print0 | xargs -0 -n1 node --check",
     "self-check": "node scripts/self-check.mjs",
-    "mcp": "node src/mcp-server.mjs",
     "browser-smoke": "node scripts/browser-smoke.mjs",
-    "verify": "npm run test:syntax && npm test && npm run self-check",
-    "http-smoke": "node scripts/http-smoke.mjs",
-    "mcp-smoke": "node scripts/mcp-smoke.mjs"
+    "mcp-smoke": "node scripts/mcp-smoke.mjs",
+    "verify": "npm run test:syntax && npm test && npm run self-check"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.2.0",
