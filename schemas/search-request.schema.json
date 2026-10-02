@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BrowserSearchRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["query"],
+  "properties": {
+    "query": {"type": "string", "minLength": 1, "maxLength": 256},
+    "limit": {"type": "integer", "minimum": 1, "maximum": 10},
+    "language": {"type": "string", "pattern": "^[a-z]{2}(-[a-z]{2})?$", "default": "nl"},
+    "country": {"type": "string", "pattern": "^[a-z]{2}$", "default": "nl"}
+  }
+}
