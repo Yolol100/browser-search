@@ -23,3 +23,5 @@ Only `http` and `https` result URLs are emitted. Credential-bearing URLs, local 
 ## Secrets and browser state
 
 Keep bearer tokens and tunnel credentials in environment variables or a secret manager. Do not commit `.env`, cookies, storage state, Playwright auth state, traces, HAR files or screenshots containing session data.
+
+Search queries are sent to Google. Do not put secrets or inappropriate confidential/personal data into queries. Treat returned titles and snippets as untrusted external content and verify destination sources before using their claims.
