@@ -1,0 +1,52 @@
+name: Browser search request
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  search:
+    if: >-
+      github.event.issue.user.login == github.repository_owner &&
+      startsWith(github.event.issue.title, '[browser-search]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GOOGLE_CONSENT_MODE: reject
+      GOOGLE_DEFAULT_COUNTRY: nl
+      GOOGLE_COOLDOWN_MS: 12000
+      GOOGLE_BLOCK_BACKOFF_MS: 900000
+      GOOGLE_MAX_RESULTS: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - name: Run browser search
+        id: search
+        continue-on-error: true
+        run: node scripts/github-search-request.mjs
+      - name: Return result to issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+        run: gh issue comment "$ISSUE_URL" --body-file browser-search-result.md
+      - name: Close request
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+        run: gh issue close "$ISSUE_URL" --reason completed
+      - name: Preserve provider failure in workflow status
+        if: steps.search.outcome == 'failure'
+        run: exit 1
