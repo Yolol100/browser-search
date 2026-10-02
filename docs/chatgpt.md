@@ -1,43 +1,39 @@
 # ChatGPT usage without MCP
 
-The repository can be used through GitHub itself when the ChatGPT environment has permission to create and read GitHub issues.
+The no-MCP route is:
 
-## Request
+`ChatGPT -> GitHub issue -> self-hosted GitHub Actions runner -> Playwright/Google -> issue comment -> ChatGPT`
 
-Create an issue in `Yolol100/browser-search`.
+## Why self-hosted
 
-Title:
+The GitHub-hosted-runner proof successfully received a ChatGPT-created issue and executed this repository, but Google returned `GOOGLE_BLOCKED` for the cloud runner IP. A self-hosted runner executes the same repository on your own machine/network instead.
 
-`[browser-search] <short description>`
+## One-time setup
 
-Body, either:
+Open `Yolol100/browser-search` and go to `Settings -> Actions -> Runners -> New self-hosted runner`.
 
-```text
-site:nu.nl technologie
-```
+Choose the operating system and architecture of the machine that should run browser searches. Follow GitHub's generated install/config commands and add the custom label `browser-search`.
 
-or:
+Keep that runner online when you want ChatGPT-triggered searches to work.
+
+GitHub recommends extra care with self-hosted runners on public repositories. This repository is currently public, and request issues are public. Making the repository private is recommended.
+
+## Request from ChatGPT
+
+Create an issue:
+
+Title: `[browser-search] <short description>`
+
+Body:
 
 ```json
 {"query":"site:nu.nl technologie","limit":5,"language":"nl","country":"nl"}
 ```
 
-## Execution
+The workflow accepts only owner-created request issues.
 
-GitHub Actions reacts to an owner-created issue with that title prefix, checks out the repository, installs the pinned dependencies and Chromium, and runs `scripts/github-search-request.mjs`.
+## Result
 
-The search result or fail-closed provider error is posted as an issue comment. The request issue is then closed.
+The runner executes Chromium and posts one comment beginning with `<!-- browser-search-result:v1 -->`. ChatGPT reads that comment and verifies useful destination pages separately.
 
-## ChatGPT readback
-
-After creating the issue, retrieve its comments. Look for:
-
-`<!-- browser-search-result:v1 -->`
-
-Parse the JSON result and use the returned URLs as discovery candidates. Verify useful destination pages separately before making factual claims.
-
-## Important limitation
-
-OpenAI's standard GitHub app is documented primarily as repository content access and may be read-only depending on the product surface. This workflow requires a ChatGPT/Codex/connector surface that can create an issue. In the current connected GitHub toolset, issue creation and comment readback are available.
-
-The repository itself is currently public, so request issues are public. Do not use it for sensitive search queries unless the repository visibility is changed to private.
+No MCP tool, public API or tunnel is involved.
