@@ -16,6 +16,7 @@ export function normalizeResultUrl(rawUrl) {
   const unwrapped = unwrapGoogleResultUrl(rawUrl);
   if (!isPublicResultUrl(unwrapped)) return null;
   const url = new URL(unwrapped);
+  if (GOOGLE_HOST_RE.test(url.hostname) && (/^\/(?:aclk|pagead)(?:\/|$)/i.test(url.pathname) || url.pathname === '/search')) return null;
   url.hash = '';
   for (const key of [...url.searchParams.keys()]) {
     if (key.toLowerCase().startsWith('utm_') || TRACKING_KEYS.has(key.toLowerCase())) {
