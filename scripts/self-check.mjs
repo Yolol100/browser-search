@@ -3,7 +3,7 @@ import fs from 'node:fs';
 const required = [
   'README.md', 'SECURITY.md', 'package.json', '.env.example', 'Dockerfile', 'docker-compose.yml',
   'src/server.mjs', 'src/google-browser.mjs', 'src/validation.mjs', 'src/mcp-server.mjs',
-  'scripts/browser-smoke.mjs', 'test/core.test.mjs', 'openapi.yaml',
+  'scripts/browser-smoke.mjs', 'scripts/http-smoke.mjs', 'scripts/mcp-smoke.mjs', 'test/core.test.mjs', 'openapi.yaml',
   'schemas/search-request.schema.json', 'schemas/search-response.schema.json', '.github/workflows/ci.yml'
 ];
 const missing = required.filter(file => !fs.existsSync(file));
