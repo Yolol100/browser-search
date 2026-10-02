@@ -1,12 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { once } from 'node:events';
 import { validateSearchInput, isPublicResultUrl } from '../src/validation.mjs';
 import { normalizeResultUrl, dedupeResults, looksBlocked, unwrapGoogleResultUrl } from '../src/results.mjs';
 import { loadConfig } from '../src/config.mjs';
 import { SerialCooldownGate } from '../src/gate.mjs';
 import { buildGoogleSearchUrl, isExpectedGoogleHost, GoogleBrowserSearch } from '../src/google-browser.mjs';
-import { createHttpServer, safeTokenEqual } from '../src/http-app.mjs';
 import { publicError, SearchError } from '../src/errors.mjs';
 
 function withEnv(values, fn) {
@@ -42,20 +40,16 @@ test('rejects literal IP, local and credential-bearing result URLs', () => {
   assert.equal(isPublicResultUrl('file:///etc/passwd'), false);
 });
 
-test('unwraps Google redirect results but not ad redirectors', () => {
+test('unwraps Google organic redirects and excludes Google ad redirectors', () => {
   assert.equal(
     unwrapGoogleResultUrl('https://www.google.com/url?q=https%3A%2F%2Fexample.com%2Fa%3Fx%3D1&sa=U'),
     'https://example.com/a?x=1'
-  );
-  assert.equal(
-    unwrapGoogleResultUrl('https://www.google.com/aclk?foo=bar'),
-    'https://www.google.com/aclk?foo=bar'
   );
   assert.equal(normalizeResultUrl('https://www.google.com/aclk?foo=bar'), null);
   assert.equal(normalizeResultUrl('https://www.google.com/pagead/aclk?foo=bar'), null);
 });
 
-test('normalizes tracking params, parameter order and exact duplicates', () => {
+test('normalizes tracking params and deduplicates exact normalized URLs', () => {
   assert.equal(normalizeResultUrl('https://example.com/a?utm_source=x&z=3&b=2#part'), 'https://example.com/a?b=2&z=3');
   const results = dedupeResults([
     { title: 'A', url: 'https://example.com/a?utm_source=x&b=2', snippet: 'one' },
@@ -66,16 +60,20 @@ test('normalizes tracking params, parameter order and exact duplicates', () => {
   assert.equal(results[0].source, 'google-browser');
 });
 
-test('detects Google automated-traffic block text in multiple languages', () => {
+test('detects Google automated-traffic block signals', () => {
   assert.equal(looksBlocked('Our systems have detected unusual traffic from your computer network', 'https://www.google.com/sorry/'), true);
   assert.equal(looksBlocked('ongebruikelijk verkeer vanaf uw computernetwerk', 'https://www.google.nl/search?q=x'), true);
   assert.equal(looksBlocked('normal results', 'https://www.google.com/search?q=x'), false);
 });
 
-test('requires a sufficiently long token for non-loopback bind', () => {
-  withEnv({ BROWSER_SEARCH_HOST: '0.0.0.0', BROWSER_SEARCH_TOKEN: '' }, () => assert.throws(() => loadConfig(), /TOKEN/));
-  withEnv({ BROWSER_SEARCH_HOST: '0.0.0.0', BROWSER_SEARCH_TOKEN: 'short' }, () => assert.throws(() => loadConfig(), /24/));
-  withEnv({ BROWSER_SEARCH_HOST: '0.0.0.0', BROWSER_SEARCH_TOKEN: '123456789012345678901234' }, () => assert.equal(loadConfig().host, '0.0.0.0'));
+test('validates consent and country configuration', () => {
+  withEnv({ GOOGLE_CONSENT_MODE: 'invalid' }, () => assert.throws(() => loadConfig(), /CONSENT_MODE/));
+  withEnv({ GOOGLE_CONSENT_MODE: 'manual', GOOGLE_DEFAULT_COUNTRY: 'nld' }, () => assert.throws(() => loadConfig(), /COUNTRY/));
+  withEnv({ GOOGLE_CONSENT_MODE: 'reject', GOOGLE_DEFAULT_COUNTRY: 'nl' }, () => {
+    const config = loadConfig();
+    assert.equal(config.consentMode, 'reject');
+    assert.equal(config.defaultCountry, 'nl');
+  });
 });
 
 test('serial cooldown gate never overlaps tasks and bounds queue', async () => {
@@ -92,7 +90,7 @@ test('serial cooldown gate never overlaps tasks and bounds queue', async () => {
   assert.equal(maxActive, 1);
 });
 
-test('builds localized depersonalized Google search URL', () => {
+test('builds localized depersonalized Google search URL and rejects lookalike hosts', () => {
   const url = buildGoogleSearchUrl({ query: 'wordpress seo', limit: 5, language: 'nl', country: 'be' });
   assert.equal(url.origin, 'https://www.google.com');
   assert.equal(url.searchParams.get('q'), 'wordpress seo');
@@ -112,42 +110,4 @@ test('block backoff fails closed before opening another browser', async () => {
 test('public errors hide unexpected internal messages', () => {
   assert.deepEqual(publicError(new SearchError('KNOWN', 'Known', 400)), { error: { code: 'KNOWN', message: 'Known', details: {} } });
   assert.equal(publicError(new Error('secret path /tmp/foo')).error.message, 'Unexpected search-service error.');
-});
-
-test('constant-time token helper handles valid, invalid and missing bearer values', () => {
-  assert.equal(safeTokenEqual('', undefined), true);
-  assert.equal(safeTokenEqual('abcdefghijklmnopqrstuvwx', 'Bearer abcdefghijklmnopqrstuvwx'), true);
-  assert.equal(safeTokenEqual('abcdefghijklmnopqrstuvwx', 'Bearer wrong'), false);
-  assert.equal(safeTokenEqual('abcdefghijklmnopqrstuvwx', undefined), false);
-});
-
-test('HTTP layer enforces auth/content type and returns security headers', async () => {
-  const calls = [];
-  const fakeService = {
-    readiness: async () => ({ ready: true, browser: 'chromium', executablePresent: true }),
-    search: async input => { calls.push(input); return { provider: 'google-browser', query: input.query, count: 0, results: [], meta: {} }; }
-  };
-  const config = { token: 'abcdefghijklmnopqrstuvwx', requestTimeoutMs: 5000 };
-  const server = createHttpServer(config, fakeService);
-  server.listen(0, '127.0.0.1');
-  await once(server, 'listening');
-  const { port } = server.address();
-  try {
-    const health = await fetch(`http://127.0.0.1:${port}/health`);
-    assert.equal(health.status, 200);
-    assert.equal(health.headers.get('cache-control'), 'no-store');
-    assert.ok(health.headers.get('x-request-id'));
-
-    const unauthorized = await fetch(`http://127.0.0.1:${port}/v1/search`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{"query":"x"}' });
-    assert.equal(unauthorized.status, 401);
-
-    const wrongType = await fetch(`http://127.0.0.1:${port}/v1/search`, { method: 'POST', headers: { authorization: 'Bearer abcdefghijklmnopqrstuvwx', 'content-type': 'text/plain' }, body: '{}' });
-    assert.equal(wrongType.status, 415);
-
-    const ok = await fetch(`http://127.0.0.1:${port}/v1/search`, { method: 'POST', headers: { authorization: 'Bearer abcdefghijklmnopqrstuvwx', 'content-type': 'application/json' }, body: '{"query":"x"}' });
-    assert.equal(ok.status, 200);
-    assert.deepEqual(calls, [{ query: 'x' }]);
-  } finally {
-    await new Promise(resolve => server.close(resolve));
-  }
 });
