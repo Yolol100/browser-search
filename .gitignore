@@ -3,5 +3,8 @@ node_modules/
 artifacts/
 playwright-report/
 test-results/
-.DS_Store
+playwright/.auth/
+.playwright/
+*.har
 *.log
+.DS_Store
