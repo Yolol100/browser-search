@@ -1,0 +1,12 @@
+services:
+  browser-search:
+    build: .
+    environment:
+      BROWSER_SEARCH_HOST: 0.0.0.0
+      BROWSER_SEARCH_PORT: 8787
+      BROWSER_SEARCH_TOKEN: ${BROWSER_SEARCH_TOKEN:?set BROWSER_SEARCH_TOKEN}
+      GOOGLE_CONSENT_MODE: ${GOOGLE_CONSENT_MODE:-manual}
+      GOOGLE_COOLDOWN_MS: ${GOOGLE_COOLDOWN_MS:-12000}
+    ports:
+      - "127.0.0.1:8787:8787"
+    restart: unless-stopped
