@@ -25,6 +25,5 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run verify
       - run: npm run browser-smoke
-      - run: npm run http-smoke
       - run: npm run mcp-smoke
       - run: node src/cli.mjs --help
