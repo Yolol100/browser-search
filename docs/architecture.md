@@ -2,24 +2,37 @@
 
 ## Components
 
-- `src/google-browser.mjs`: owns the Playwright browser lifecycle and Google result extraction.
-- `src/gate.mjs`: serializes runs and enforces a minimum start interval.
-- `src/validation.mjs`: validates request input and emitted result URLs.
-- `src/results.mjs`: strips common tracking parameters and deduplicates exact normalized URLs.
-- `src/service.mjs`: small orchestration layer used by CLI and HTTP API.
-- `src/server.mjs`: local JSON API.
-- `src/cli.mjs`: direct command-line entry point.
+- `src/config.mjs` — fail-closed runtime configuration.
+- `src/google-browser.mjs` — Playwright browser lifecycle, consent boundary, block detection and result extraction.
+- `src/gate.mjs` — serialized execution, cooldown and bounded queue.
+- `src/validation.mjs` — request bounds and outbound result-URL validation.
+- `src/results.mjs` — Google redirect unwrapping, tracking cleanup and deterministic deduplication.
+- `src/service.mjs` — common search/readiness service.
+- `src/http-app.mjs` — local JSON API with authentication, body bounds, timeouts and security headers.
+- `src/server.mjs` — HTTP lifecycle and graceful shutdown.
+- `src/cli.mjs` — direct command-line interface.
+- `src/mcp-server.mjs` — stdio MCP tool for local hosts and Secure MCP Tunnel.
 
-## Trust boundary
+## Trust boundaries
 
-The browser is allowed to load Google Search. The service returns search-result metadata but does not crawl result destinations. Result-page verification belongs to the calling agent's normal web retrieval layer.
+The browser is allowed to navigate to Google Search. Result destinations are treated as untrusted metadata and are never fetched by this service. Opening and verifying selected result pages belongs to the calling agent's normal web-retrieval layer.
+
+The HTTP API is loopback-only by default. Non-loopback binding requires a bearer token. For ChatGPT, prefer Secure MCP Tunnel over exposing this HTTP API publicly.
+
+## Concurrency and provider pressure
+
+Google runs are serialized. The queue is bounded and each run respects a minimum start interval. If Google returns an automated/unusual-traffic signal, the service enters a configurable backoff. Queued work rechecks the backoff immediately before browser launch so stale queued requests cannot ignore a newly detected provider block.
+
+## Browser lifecycle
+
+Every search owns one browser context. Context and browser cleanup run in `finally`, including partial-startup failures. Browser contexts provide isolated per-search storage rather than reusing login/cookie state.
 
 ## Failure behavior
 
-`CONSENT_REQUIRED`: explicit consent configuration is missing.
-
-`GOOGLE_BLOCKED`: Google reported automated/unusual traffic or CAPTCHA. Stop; do not bypass.
-
-`NO_RESULTS_PARSED`: the page rendered but selectors produced no results. Treat as layout/access drift, not an empty-search proof.
-
-`UNEXPECTED_NAVIGATION`: the search page left the expected Google domain before extraction.
+- `QUEUE_FULL` — local bounded queue is full.
+- `CONSENT_REQUIRED` / `CONSENT_UNRESOLVED` — explicit consent handling is required or could not be applied.
+- `GOOGLE_BLOCKED` / `GOOGLE_BACKOFF` — automated-traffic signal or active local backoff; stop and do not bypass.
+- `GOOGLE_NAVIGATION_FAILED` — Google could not be loaded inside the configured navigation boundary.
+- `NO_RESULTS_PARSED` — selectors produced no usable organic-result blocks; treat as access/layout drift, not proof of zero results.
+- `UNEXPECTED_NAVIGATION` — navigation left the accepted Google hostname family.
+- `PLAYWRIGHT_MISSING` / `BROWSER_LAUNCH_FAILED` — local runtime is not ready.
