@@ -6,6 +6,22 @@ Canonical flow:
 
 `ChatGPT -> GitHub issue -> self-hosted GitHub Actions runner -> Playwright/Chromium -> Google -> issue comment -> ChatGPT`
 
+## Free ChatGPT browser capabilities (verified 20 November 2026)
+
+This repository is **not required** for every browser research task. Use the least powerful, already-authorized tool that can provide the required evidence:
+
+| Task | First choice | What it proves |
+| --- | --- | --- |
+| Public facts and documentation | ChatGPT native web search | Public text, **not** interactive browsing |
+| Read an already open, paired tab in normal Chat | Browser connector `list_tabs` + `get_tab_context` | Read-only page text; no clicks or navigation |
+| Verify local Chrome works | Desktop Commander + isolated headless Chrome on a **fixed harmless test page** | Chrome smoke-test only, not safe arbitrary-site browsing |
+| Authorized public page requiring rendered-browser inspection | Guarded Desktop Commander + Playwright inspector after readiness checks | Scoped read-only browser evidence |
+| Click, fill, submit, use a logged-in session | Separately approved/tested interactive adapter | Only the exact verified interaction class |
+
+The isolated Chrome smoke for `https://example.com` succeeded on the owner's MSI on 20 November 2026, but Playwright and the self-hosted GitHub Actions runner were **not ready** on that machine. Do not treat a historical test as current readiness. No additional browser API key or cloud-browser credits are needed for native search, paired tab reading or that local smoke, assuming the connected tools/device remain available.
+
+**Security:** do not run arbitrary URLs with an unrestricted headless Chrome command or use its success as evidence of DNS/redirect/subresource protection. Use a hardened, target-authorized inspector for real arbitrary public sites. Do not send private client queries, secrets, profiles or cookies through public GitHub issues. This repository's public self-hosted runner is **not** a default execution option: GitHub warns against public-repo self-hosted runners. Prefer the existing ChatGPT read paths until a properly secured, owner-controlled runner and its workflow have been independently verified. Do not bypass CAPTCHAs or source access denials.
+
 ## Why a self-hosted runner
 
 A GitHub repository stores code; GitHub Actions executes it. A real test using a GitHub-hosted runner successfully triggered this repository from ChatGPT, but Google blocked the cloud-runner IP as automated traffic.
