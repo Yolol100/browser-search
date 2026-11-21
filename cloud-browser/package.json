@@ -1,0 +1,24 @@
+{
+  "name": "webactueel-cloud-browser-prototype",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Private Codespaces Chromium browser with an inline MCP Apps widget",
+  "engines": { "node": ">=22 <27" },
+  "scripts": {
+    "start": "node src/server.mjs",
+    "test": "node --test spec/*.spec.mjs",
+    "test:syntax": "node --check src/security.mjs && node --check src/browser.mjs && node --check src/server.mjs",
+    "browser-smoke": "node scripts/browser-smoke.mjs",
+    "browser-actions-smoke": "node scripts/browser-actions-smoke.mjs",
+    "mcp-browser-e2e": "node scripts/mcp-browser-e2e.mjs",
+    "verify": "npm run test:syntax && npm test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "1.0.1",
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "express": "5.1.0",
+    "playwright": "1.65.0",
+    "zod": "4.2.0"
+  }
+}

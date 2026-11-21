@@ -1,0 +1,23 @@
+{
+  "name": "Webactueel Browser prototype",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "forwardPorts": [
+    8765
+  ],
+  "portsAttributes": {
+    "8765": {
+      "label": "Private MCP Browser (do not make public)",
+      "onAutoForward": "notify"
+    }
+  },
+  "postCreateCommand": "cd cloud-browser && npm install --no-audit --no-fund && npx playwright install --with-deps chromium",
+  "postStartCommand": "bash .devcontainer/start-cloud-browser.sh",
+  "postAttachCommand": "bash .devcontainer/start-cloud-browser.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-playwright.playwright"
+      ]
+    }
+  }
+}

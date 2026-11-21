@@ -1,0 +1,52 @@
+name: Private cloud browser prototype
+
+on:
+  pull_request:
+    paths:
+      - 'cloud-browser/**'
+      - '.devcontainer/**'
+      - '.github/workflows/cloud-browser-prototype.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Offline security and syntax tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Install isolated prototype dependencies
+        working-directory: cloud-browser
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Verify prototype offline
+        working-directory: cloud-browser
+        run: npm run verify
+      - name: Install Chromium
+        working-directory: cloud-browser
+        run: npx playwright install --with-deps chromium
+      - name: Smoke-test local Chromium without external websites
+        working-directory: cloud-browser
+        run: npm run browser-smoke
+      - name: Exercise actual browser clicks, typing, scrolling and screenshots (offline fixture)
+        working-directory: cloud-browser
+        run: npm run browser-actions-smoke
+      - name: Exercise MCP server, HTTPS navigation, browser actions and SSRF restrictions
+        working-directory: cloud-browser
+        run: npm run mcp-browser-e2e
+      - name: Verify Codespaces private start hook and idempotent restart on isolated CI runner
+        run: |
+          bash -n .devcontainer/start-cloud-browser.sh
+          bash -n .devcontainer/stop-cloud-browser.sh
+          CODESPACES=true bash .devcontainer/start-cloud-browser.sh
+          CODESPACES=true bash .devcontainer/start-cloud-browser.sh
+          curl --fail --silent --max-time 2 http://127.0.0.1:8765/health | grep -F '"private":true'
+          bash .devcontainer/stop-cloud-browser.sh
