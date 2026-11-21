@@ -15,7 +15,7 @@ jobs:
   validate:
     name: Offline security and syntax tests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -30,3 +30,9 @@ jobs:
       - name: Verify prototype offline
         working-directory: cloud-browser
         run: npm run verify
+      - name: Install Chromium
+        working-directory: cloud-browser
+        run: npx playwright install --with-deps chromium
+      - name: Smoke-test local Chromium without external websites
+        working-directory: cloud-browser
+        run: npm run browser-smoke
