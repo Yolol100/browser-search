@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Webactueel Browser</title>
+<style>
+  :root { color-scheme: light dark; font-family: system-ui, -apple-system, sans-serif; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 14px; color: var(--color-text-primary, #222); background: var(--color-background-primary, #fff); }
+  .shell { max-width: 1090px; margin: auto; border: 1px solid #dadde2; border-radius: 14px; overflow: hidden; background: #f7f8fa; color: #222; }
+  header { display: flex; align-items: center; gap: 7px; padding: 12px; background: white; border-bottom: 1px solid #e1e5ea; }
+  header button { flex: 0 0 auto; }
+  input, button { font: inherit; border-radius: 7px; }
+  input { min-width: 0; padding: 9px 10px; border: 1px solid #d4d9df; background: white; color: #20242a; }
+  #url { flex: 1; font-size: 13px; }
+  button { padding: 9px 11px; background: #f2f4f7; border: 1px solid #dbe0e7; color: #20242a; cursor: pointer; font-size: 13px; }
+  button:hover { background: #e5eaf0; }
+  button:disabled { opacity: .45; cursor: wait; }
+  #go { background: #222; border-color: #222; color: white; }
+  .screen-wrap { position: relative; aspect-ratio: 1024 / 640; background: #e5e7eb; overflow: hidden; }
+  #screen { width: 100%; height: 100%; display: none; cursor: crosshair; user-select: none; }
+  #empty { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; font-size: 14px; color: #64748b; padding: 20px; }
+  .tools { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; background: white; padding: 9px 12px; border-top: 1px solid #e1e5ea; }
+  #typing { flex: 1; min-width: 120px; }
+  .status { margin-left: auto; color: #64748b; font-size: 12px; }
+  #error { font-size: 12px; color: #ad1925; padding: 4px 12px 10px; display: none; background: white; }
+  .notice { padding: 7px 12px; font-size: 11px; background: #f7f8fa; color: #526071; }
+  @media (max-width: 600px) {
+    body { padding: 0; }
+    .shell { border-radius: 0; }
+    header { flex-wrap: wrap; }
+    #url { order: 5; flex-basis: calc(100% - 62px); }
+    #go { order: 6; }
+    #typing { flex-basis: 100%; }
+  }
+</style>
+</head>
+<body>
+<section class="shell" aria-label="Webactueel Cloud Browser">
+  <header>
+    <button id="back" title="Terug" aria-label="Terug">&#8592;</button>
+    <button id="reload" title="Vernieuwen" aria-label="Vernieuwen">&#8635;</button>
+    <button id="fullscreen" title="Volledig scherm" aria-label="Volledig scherm">&#x26F6;</button>
+    <input id="url" type="url" value="https://example.com/" placeholder="https://example.com/" aria-label="Adres">
+    <button id="go">Open</button>
+  </header>
+  <div class="screen-wrap">
+    <div id="empty">Browser wordt geladen…</div>
+    <img id="screen" alt="Actueel browserbeeld. Klik om op de website te klikken." draggable="false">
+  </div>
+  <div class="tools">
+    <button id="up" aria-label="Omhoog scrollen">&#8593; Scroll</button>
+    <button id="down" aria-label="Omlaag scrollen">&#8595; Scroll</button>
+    <input id="typing" type="text" autocomplete="off" placeholder="Tekst naar geselecteerd veld (geen wachtwoorden)" aria-label="Invoer voor website">
+    <button id="type">Typ</button>
+    <button id="close">Sluit browser</button>
+    <span class="status" id="status">Verbinden…</span>
+  </div>
+  <div id="error" role="alert"></div>
+  <div class="notice">Privé-prototype. Alleen vooraf toegestane HTTPS-domeinen. Geen logins of gevoelige gegevens invoeren.</div>
+</section>
+<script>
+(function () {
+  "use strict";
+  const api = window.openai;
+  const el = (id) => document.getElementById(id);
+  const image = el("screen");
+  let updating = false;
+  let busy = false;
+  let current = "https://example.com/";
+  function showError(message) {
+    el("error").textContent = message || "";
+    el("error").style.display = message ? "block" : "none";
+  }
+  function decode(response) {
+    if (!response) throw new Error("Geen antwoord van browserserver");
+    if (response.isError) throw new Error("Browseractie geweigerd");
+    if (response.structuredContent) return response.structuredContent;
+    const raw = typeof response.result === "string" ? response.result : response;
+    if (typeof raw === "string") {
+      const parsed = JSON.parse(raw);
+      return parsed.structuredContent || parsed;
+    }
+    if (raw.structuredContent) return raw.structuredContent;
+    if (raw.content && raw.content[0] && raw.content[0].text) {
+      const parsed = JSON.parse(raw.content[0].text);
+      return parsed.structuredContent || parsed;
+    }
+    return raw;
+  }
+  async function call(name, args) {
+    if (!api || typeof api.callTool !== "function") {
+      throw new Error("Open deze widget via je gekoppelde ChatGPT MCP-app.");
+    }
+    return decode(await api.callTool(name, args));
+  }
+  function apply(data) {
+    if (!data) return;
+    if (data.url && data.url !== "about:blank") {
+      current = data.url;
+      if (document.activeElement !== el("url")) el("url").value = data.url;
+    }
+    el("status").textContent = data.status === "closed" ? "Gesloten" : (data.title || "Verbonden");
+    if (data.image) {
+      image.src = data.image;
+      image.style.display = "block";
+      el("empty").style.display = "none";
+    } else if (data.status === "closed") {
+      image.style.display = "none";
+      el("empty").style.display = "grid";
+      el("empty").textContent = "Browsersessie gesloten.";
+    }
+  }
+  async function frame() {
+    if (updating || busy || document.hidden) return;
+    updating = true;
+    try { apply(await call("browser_frame", {})); showError(""); }
+    catch (error) { showError(error.message); }
+    finally { updating = false; }
+  }
+  async function action(kind, data = {}) {
+    if (busy) return;
+    busy = true;
+    try {
+      showError("");
+      el("status").textContent = "Bezig…";
+      apply(await call("browser_action", { action: kind, ...data }));
+      if (kind !== "close") await frameAfterAction();
+    } catch (error) { showError(error.message); }
+    finally { busy = false; }
+  }
+  async function frameAfterAction() {
+    apply(await call("browser_frame", {}));
+  }
+  el("go").addEventListener("click", () => action("navigate", { url: el("url").value }));
+  el("url").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") { event.preventDefault(); el("go").click(); }
+  });
+  el("back").addEventListener("click", () => action("back"));
+  el("reload").addEventListener("click", () => action("reload"));
+  el("up").addEventListener("click", () => action("scroll", { deltaY: -480 }));
+  el("down").addEventListener("click", () => action("scroll", { deltaY: 480 }));
+  el("type").addEventListener("click", () => {
+    if (!el("typing").value) return;
+    action("type", { text: el("typing").value });
+    el("typing").value = "";
+  });
+  el("typing").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") { event.preventDefault(); el("type").click(); }
+  });
+  el("close").addEventListener("click", () => action("close"));
+  el("fullscreen").addEventListener("click", () => {
+    if (api && typeof api.requestDisplayMode === "function") {
+      api.requestDisplayMode({ mode: "fullscreen" }).catch(() => {});
+    }
+  });
+  image.addEventListener("click", (event) => {
+    const rect = image.getBoundingClientRect();
+    const x = Math.floor((event.clientX - rect.left) * 1024 / rect.width);
+    const y = Math.floor((event.clientY - rect.top) * 640 / rect.height);
+    action("click", { x, y });
+  });
+  if (api && api.toolOutput) apply(api.toolOutput);
+  frame();
+  const timer = window.setInterval(frame, 2000);
+  window.addEventListener("pagehide", () => window.clearInterval(timer));
+})();
+</script>
+</body>
+</html>
