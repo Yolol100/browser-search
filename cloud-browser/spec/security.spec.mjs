@@ -26,7 +26,7 @@ test("invalid allowlist entries are refused", () => {
 test("private, reserved and loopback IPs are refused", () => {
   for (const ip of ["127.0.0.1", "10.0.0.2", "192.168.1.1", "172.16.4.5",
                     "169.254.169.254", "100.64.0.1", "192.0.2.3", "::1",
-                    "fc00::1", "fe80::1", "::ffff:127.0.0.1"]) {
+                    "fc00::1", "fe80::1", "::ffff:127.0.0.1", "::ffff:7f00:1", "2001:db8::1", "2002::1"]) {
     assert.equal(isPublicIp(ip), false, ip);
   }
   assert.equal(isPublicIp("93.184.215.14"), true);
