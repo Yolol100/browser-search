@@ -30,5 +30,6 @@ test("server defaults to local-only binding and Codespaces keeps ports private b
   assert.match(server, /process\.env\.BROWSER_BIND \|\| "127\.0\.0\.1"/);
   assert.match(server, /Refusing public bind/);
   assert.ok(devcontainer.forwardPorts.includes(8765));
+  assert.deepEqual(devcontainer.features["ghcr.io/devcontainers/features/sshd:1"], { gatewayPorts: "no" });
   assert.doesNotMatch(JSON.stringify(devcontainer), /"visibility"\s*:\s*"public"/);
 });
