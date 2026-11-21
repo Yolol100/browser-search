@@ -44,10 +44,8 @@ export class BrowserService {
     if (typeof this.context.routeWebSocket === "function") {
       await this.context.routeWebSocket("**/*", (socket) => socket.close());
     }
-    this.context.on("page", (page) => {
-      if (page !== this.page) page.close().catch(() => {});
-    });
     this.page = await this.context.newPage();
+    this.page.on("popup", (page) => page.close().catch(() => {}));
     this.page.setDefaultTimeout(5000);
     this.page.on("dialog", (dialog) => dialog.dismiss().catch(() => {}));
   }
