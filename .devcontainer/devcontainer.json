@@ -19,5 +19,10 @@
         "ms-playwright.playwright"
       ]
     }
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/sshd:1": {
+      "gatewayPorts": "no"
+    }
   }
 }
