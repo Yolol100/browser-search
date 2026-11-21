@@ -22,6 +22,8 @@ button{margin-top:14px}#bottom{position:absolute;top:1800px;left:20px}</style>
   assert.equal(await browser.page.locator("#result").textContent(), "clicked");
 
   await browser.action({ action: "scroll", deltaY: 620 });
+  // Wheel events are asynchronous in Chromium: wait for the rendered scroll.
+  await browser.page.waitForFunction(() => window.scrollY > 100, null, { timeout: 2500 });
   assert.ok(await browser.page.evaluate(() => window.scrollY) > 100, "Page scrolled down");
 
   const frame = await browser.frame();
