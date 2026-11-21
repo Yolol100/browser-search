@@ -9,7 +9,7 @@ Status: prototype op draft PR #12. Geen live Codespace, tunnel, Hostinger-wijzig
 | GitHub-branch | feature/codespaces-mcp-browser-prototype-20261121 |
 | Codespaces-container | .devcontainer/devcontainer.json; Node 22, installatie Chromium |
 | Werkmap | cloud-browser |
-| Start | npm start (node src/server.mjs) |
+| Start | automatisch bij Codespaces start/herstart via postStartCommand; handmatig npm start mogelijk |
 | BROWSER_BIND | 127.0.0.1, bind naar publieke interfaces wordt geweigerd |
 | PORT | 8765 |
 | BROWSER_ALLOWED_HOSTS | example.com standaard; exacte HTTPS-hosts, maximaal acht |
@@ -23,19 +23,16 @@ Status: prototype op draft PR #12. Geen live Codespace, tunnel, Hostinger-wijzig
 1. Open https://github.com/Yolol100/browser-search/tree/feature/codespaces-mcp-browser-prototype-20261121 .
 2. Klik Code > Codespaces > Create codespace on this branch, kies 2 cores indien beschikbaar.
 3. Controleer gratis resterende quota en je GitHub-budgetlimiet voor kosten.
-4. De postCreateCommand installeert npm-pakketten en Playwright Chromium. Start vervolgens in de Codespaces-terminal:
+4. De postCreateCommand installeert npm-pakketten en Playwright Chromium. De postStartCommand start daarna automatisch de lokale MCP-server en doet dit ook na een Codespaces-herstart.
+5. Open de terminal en controleer:
 
+       curl -fsS http://127.0.0.1:8765/health
        cd cloud-browser
        npm run verify
        npm run browser-smoke
        npm run browser-actions-smoke
-       npm start
 
-5. Open een tweede terminal en controleer:
-
-       curl -fsS http://127.0.0.1:8765/health
-
-   Verwacht: {"status":"ok","private":true}.
+   Verwacht: {"status":"ok","private":true}. Vanaf de repositoryroot kun je indien nodig `CODESPACES=true bash .devcontainer/start-cloud-browser.sh` uitvoeren om zonder duplicaten opnieuw te starten; stoppen kan met `bash .devcontainer/stop-cloud-browser.sh`. Een bestaand Codespace moet de bijgewerkte devcontainerconfig eerst ophalen en eventueel rebuilden.
 6. Controleer in tab Ports dat poort 8765 de zichtbaarheid PRIVATE heeft. Maak deze nooit PUBLIC.
 
 ## MCP endpoint en Codespaces-URL
@@ -72,10 +69,12 @@ Vereist een nieuwe, goed beveiligde HTTPS-proxy met gebruikersauthenticatie en o
 
 - GitHub Free persoonlijke accounts bevatten 120 core-uren en 15 GB-maand Codespaces-opslag per maand. Twee cores betekenen circa 60 actieve uren bij geen ander gebruik.
 - Standaard stopt Codespaces na 30 minuten inactiviteit; timeout kan 5–240 minuten zijn. Elke draaiende sessie stopt uiterlijk na 12 uur, ongeacht activiteit.
-- Geen Codespace automatisch vanuit ChatGPT starten: hiervoor ontbreekt nog een aparte, beveiligde on-demand-startintegratie.
+- De browser-MCP-service start nu automatisch zodra de Codespace zelf wordt gestart. Geen Codespace automatisch vanuit ChatGPT starten: hiervoor ontbreekt nog een aparte, beveiligde on-demand-startintegratie.
+- Automatisch opstarten van een Codespace verbruikt GitHub Codespaces-compute zodra deze actief is. Schakel onnodige sessies uit via de GitHub Codespaces UI.
 - Websiteallowlist: alleen exacte HTTPS-domeinen. URL-blokkade, DNS-check, privéadresblokkade, uitgeschakelde WebSockets, beperkte browserrechten.
 - DNS-check blokkeert veel SSRF-routes maar sluit DNS-rebinding/TOCTOU niet volledig uit. Behandel dit als ontwikkelprototype, niet als productie-browser.
 - Geen Google-login, OAuth-tokens, wachtwoorden, betaalacties of klantdata invoeren.
+- ChatGPT custom MCP-apps zijn afhankelijk van workspacebeleid; verbinding en iframe-test vereisen momenteel ChatGPT via web, niet de iOS-app.
 - PR #12 blijft een draft totdat Codespaces-start, tunnel, echte browserbesturing en de iframe-widget binnen ChatGPT zijn geverifieerd.
 
 ## Bronnen
