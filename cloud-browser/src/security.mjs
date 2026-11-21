@@ -42,12 +42,13 @@ export function isPublicIp(address) {
   }
   if (isIP(address) === 6) {
     const lower = address.toLowerCase();
-    if (lower === "::" || lower === "::1" || lower.startsWith("fc") || lower.startsWith("fd") ||
-        lower.startsWith("fe8") || lower.startsWith("fe9") ||
-        lower.startsWith("fea") || lower.startsWith("feb") ||
-        lower.startsWith("ff")) return false;
-    const mapped = lower.match(/::ffff:(\d+\.\d+\.\d+\.\d+)$/);
-    if (mapped) return isPublicIp(mapped[1]);
+    // Only ordinary global unicast IPv6; reject mapped, ULA, link-local and tunnels.
+    const parts = lower.split(":");
+    const first = Number.parseInt(parts[0], 16);
+    const second = Number.parseInt(parts[1] || "0", 16);
+    if (!Number.isFinite(first) || first < 0x2000 || first > 0x3fff) return false;
+    if (first === 0x2001 && (second === 0 || second === 0xdb8)) return false;
+    if (first === 0x2002 || first === 0x3ffe) return false;
     return true;
   }
   return false;
