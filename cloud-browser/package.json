@@ -7,7 +7,7 @@
   "engines": { "node": ">=22 <27" },
   "scripts": {
     "start": "node src/server.mjs",
-    "test": "node --test",
+    "test": "node --test spec/*.spec.mjs",
     "test:syntax": "node --check src/security.mjs && node --check src/browser.mjs && node --check src/server.mjs",
     "browser-smoke": "node scripts/browser-smoke.mjs",
     "verify": "npm run test:syntax && npm test"
