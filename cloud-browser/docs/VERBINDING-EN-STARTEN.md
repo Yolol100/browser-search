@@ -20,6 +20,12 @@ Status: prototype op draft PR #12. Geen live Codespace, tunnel, Hostinger-wijzig
 
 ## Handmatig een Codespace aanmaken
 
+**Directe GitHub-startlink (maakt de Codespace niet zonder jouw bevestiging):**
+
+[Codespace maken of hervatten op de juiste branch](https://codespaces.new/Yolol100/browser-search/tree/feature/codespaces-mcp-browser-prototype-20261121?quickstart=1)
+
+Controleer voor bevestiging je GitHub Codespaces-quota, budgetlimiet en een kleine machinekeuze. Met de nieuwe postStartCommand begint de browser-MCP-service na Codespace-start automatisch te luisteren op de privépoort 8765.
+
 1. Open https://github.com/Yolol100/browser-search/tree/feature/codespaces-mcp-browser-prototype-20261121 .
 2. Klik Code > Codespaces > Create codespace on this branch, kies 2 cores indien beschikbaar.
 3. Controleer gratis resterende quota en je GitHub-budgetlimiet voor kosten.
