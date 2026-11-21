@@ -55,12 +55,13 @@ Steel is open source, but its default published API and debugging ports are **un
 
 ## Acceptance before public use
 
-1. npm run verify passes.
-2. Browser screenshot/navigation/click tested in a running Codespace.
-3. Independent QA confirms network and browser isolation against redirects, popups, downloads, WebSockets, DNS rebinding and sensitive-data leakage.
-4. OAuth 2.1 or a secure tunnel is configured; public port without authentication is forbidden.
-5. The inline ChatGPT widget has been opened and tested in the user's actual ChatGPT environment.
-6. Codespaces quota and auto-stop rules are confirmed; no paid usage is automatically enabled.
+1. npm run verify passes (including MCP handshake and widget resource).
+2. npm run browser-smoke passes using a local HTML page.
+3. Browser screenshot/navigation/click tested in a running Codespace.
+4. Independent QA confirms network and browser isolation against redirects, popups, downloads, WebSockets, DNS rebinding and sensitive-data leakage.
+5. OAuth 2.1 or a secure tunnel is configured; public port without authentication is forbidden.
+6. The inline ChatGPT widget has been opened and tested in the user's actual ChatGPT environment.
+7. Codespaces quota and auto-stop rules are confirmed; no paid usage is automatically enabled.
 
 Official references:
 - https://developers.openai.com/plugins/build/chatgpt-ui
