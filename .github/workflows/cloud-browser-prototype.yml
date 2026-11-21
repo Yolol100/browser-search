@@ -42,3 +42,11 @@ jobs:
       - name: Exercise MCP server, HTTPS navigation, browser actions and SSRF restrictions
         working-directory: cloud-browser
         run: npm run mcp-browser-e2e
+      - name: Verify Codespaces private start hook and idempotent restart on isolated CI runner
+        run: |
+          bash -n .devcontainer/start-cloud-browser.sh
+          bash -n .devcontainer/stop-cloud-browser.sh
+          CODESPACES=true bash .devcontainer/start-cloud-browser.sh
+          CODESPACES=true bash .devcontainer/start-cloud-browser.sh
+          curl --fail --silent --max-time 2 http://127.0.0.1:8765/health | grep -F '"private":true'
+          bash .devcontainer/stop-cloud-browser.sh
