@@ -36,3 +36,9 @@ jobs:
       - name: Smoke-test local Chromium without external websites
         working-directory: cloud-browser
         run: npm run browser-smoke
+      - name: Exercise actual browser clicks, typing, scrolling and screenshots (offline fixture)
+        working-directory: cloud-browser
+        run: npm run browser-actions-smoke
+      - name: Exercise MCP server, HTTPS navigation, browser actions and SSRF restrictions
+        working-directory: cloud-browser
+        run: npm run mcp-browser-e2e
