@@ -11,18 +11,21 @@ The existing Google search workflow, runner labels and package files stay unchan
 - A screenshot frame every two seconds (not real-time video).
 - Restriction to an exact HTTPS host allowlist; requests and redirects are filtered, WebSockets and service workers are blocked, DNS destinations are checked for private IPs.
 - **Private development only:** binds to 127.0.0.1 and expects a PRIVATE Codespaces forwarded port.
+- Automatic private MCP server startup on Codespaces create/resume through postStartCommand; no tunnel or public port is started.
 
 ## Run in Codespaces
 
 1. In GitHub, open the feature branch in this repo, then **Code > Codespaces > Create codespace**. Choose the smallest 2-core option.
-2. The .devcontainer config runs npm install and installs Playwright Chromium. Review the free Codespaces allowance before creating a machine; there is no guarantee of unlimited free usage.
-3. In Codespaces Terminal:
+2. The .devcontainer config installs npm packages and Playwright Chromium. Review the free Codespaces allowance before creating a machine. The postStart hook starts the local-only MCP server automatically when the Codespace starts or resumes.
+3. In Codespaces Terminal, verify it is running:
 
+       curl -fsS http://127.0.0.1:8765/health
        cd cloud-browser
        npm run verify
        npm run browser-smoke
        npm run browser-actions-smoke
-       npm start
+
+   To restart the local service manually, from the repo root use `CODESPACES=true bash .devcontainer/start-cloud-browser.sh` only inside a trusted Codespace; to stop it, use `bash .devcontainer/stop-cloud-browser.sh`. Logs live in a private directory at `~/.cache/webactueel-private-browser/server.log` rather than in GitHub commits.
 
 4. The private MCP endpoint inside the Codespace is:
 
