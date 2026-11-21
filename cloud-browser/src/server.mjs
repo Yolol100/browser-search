@@ -1,6 +1,5 @@
 import express from "express";
 import fs from "node:fs";
-import { fileURLToPath } from "node:url";
 import { registerAppTool, registerAppResource, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -56,7 +55,8 @@ function createMcpServer() {
       text: z.string().max(500).optional(),
       deltaY: z.number().optional()
     },
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true }
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
+    _meta: { ui: { visibility: ["model", "app"] } }
   }, async (args) => {
     try { return response(await service.action(args)); }
     catch (err) { return safeError(err); }
