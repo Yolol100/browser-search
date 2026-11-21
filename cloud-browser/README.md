@@ -20,6 +20,8 @@ The existing Google search workflow, runner labels and package files stay unchan
 
        cd cloud-browser
        npm run verify
+       npm run browser-smoke
+       npm run browser-actions-smoke
        npm start
 
 4. The private MCP endpoint inside the Codespace is:
@@ -56,12 +58,13 @@ Steel is open source, but its default published API and debugging ports are **un
 ## Acceptance before public use
 
 1. npm run verify passes (including MCP handshake and widget resource).
-2. npm run browser-smoke passes using a local HTML page.
-3. Browser screenshot/navigation/click tested in a running Codespace.
-4. Independent QA confirms network and browser isolation against redirects, popups, downloads, WebSockets, DNS rebinding and sensitive-data leakage.
-5. OAuth 2.1 or a secure tunnel is configured; public port without authentication is forbidden.
-6. The inline ChatGPT widget has been opened and tested in the user's actual ChatGPT environment.
-7. Codespaces quota and auto-stop rules are confirmed; no paid usage is automatically enabled.
+2. npm run browser-smoke and npm run browser-actions-smoke pass using a local HTML fixture.
+3. npm run mcp-browser-e2e passes on a test runner, including real HTTPS navigation to example.com and allowlist rejection.
+4. Browser screenshot/navigation/click tested in a running Codespace.
+5. Independent QA confirms network and browser isolation against redirects, popups, downloads, WebSockets, DNS rebinding and sensitive-data leakage.
+6. OAuth 2.1 or a secure tunnel is configured; public port without authentication is forbidden.
+7. The inline ChatGPT widget has been opened and tested in the user's actual ChatGPT environment.
+8. Codespaces quota and auto-stop rules are confirmed; no paid usage is automatically enabled.
 
 Official references:
 - https://developers.openai.com/plugins/build/chatgpt-ui
