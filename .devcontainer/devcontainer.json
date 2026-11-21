@@ -11,12 +11,13 @@
     }
   },
   "postCreateCommand": "cd cloud-browser && npm install --no-audit --no-fund && npx playwright install --with-deps chromium",
+  "postStartCommand": "bash .devcontainer/start-cloud-browser.sh",
+  "postAttachCommand": "bash .devcontainer/start-cloud-browser.sh",
   "customizations": {
     "vscode": {
       "extensions": [
         "ms-playwright.playwright"
       ]
     }
-  },
-  "postStartCommand": "bash .devcontainer/start-cloud-browser.sh"
+  }
 }
